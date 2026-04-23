@@ -1,36 +1,14 @@
-/* import express, { type Express, type Request, type Response } from "express";
+import express, { type Express, type Request, type Response } from "express";
 import cors from "cors";
-import pinoHttp from "pino-http";
-import router from "./routes";
-import { logger } from "./lib/logger";
+import { pinoHttp } from "pino-http"; 
+import router from "./routes/index"; 
 
-const app: Express = express();
-
-app.use(
-  pinoHttp({
-    logger,
-    serializers: {
-      req(req: Request) {
-        return {
-          id: req.id,
-          method: req.method,
-          url: req.url?.split("?")[0],
-        };
-      },
-      res(res: Response) {
-        return {
-          statusCode: res.statusCode,
-        };
-      },
-    },
-  }),
-);
-*/
-
+/* 
 import express, { type Express, type Request, type Response } from "express";
 import cors from "cors";
 import { pinoHttp } from "pino-http"; // Changed to { pinoHttp }
 import router from "./routes";
+*/
 import { logger } from "./lib/logger";
 
 const app: Express = express();
