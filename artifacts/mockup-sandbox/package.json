@@ -12,7 +12,8 @@
     "lucide-react": "latest",
     "framer-motion": "latest",
     "clsx": "latest",
-    "tailwind-merge": "latest"
+    "tailwind-merge": "latest",
+    "tw-animate-css": "latest"
   },
   "devDependencies": {
     "vite": "latest",
@@ -23,5 +24,3 @@
     "typescript": "latest"
   }
 }
-
-
