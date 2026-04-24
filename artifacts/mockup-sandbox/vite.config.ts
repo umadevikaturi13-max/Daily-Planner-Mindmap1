@@ -18,10 +18,14 @@ export default defineConfig({
 
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite'; // Add this for Tailwind 4 support
 import path from 'path';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    tailwindcss(), // Initialize Tailwind here
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -29,5 +33,6 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
+    cssMinify: 'esbuild', // Change from lightningcss to esbuild to stop the "Unknown at rule" warnings
   }
 });
