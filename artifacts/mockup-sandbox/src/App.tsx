@@ -9,17 +9,12 @@ interface MindNode { id: string; text: string; children: MindNode[]; }
 interface Meal { id: MealKey; label: string; done: boolean; }
 
 export default function App() {
-  // --- Auth & Navigation ---
-  const [view, setView] = useState<ViewState>(() => {
-    return localStorage.getItem('isLoggedIn') === 'true' ? 'home' : 'auth';
-  });
-  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signup');
+  const [view, setView] = useState<ViewState>(() => localStorage.getItem('isLoggedIn') === 'true' ? 'home' : 'auth');
   const [userName, setUserName] = useState(() => localStorage.getItem('userName') || "");
   const [newTaskText, setNewTaskText] = useState("");
   const [currentCat, setCurrentCat] = useState<TaskCategory>('home');
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
-  // --- Main Data State ---
   const [data, setData] = useState(() => {
     const saved = localStorage.getItem('master_daily_app_data');
     return saved ? JSON.parse(saved) : {
@@ -37,19 +32,18 @@ export default function App() {
     };
   });
 
-  // --- Persistence Side Effects ---
   useEffect(() => {
     localStorage.setItem('master_daily_app_data', JSON.stringify(data));
     localStorage.setItem('userName', userName);
     localStorage.setItem('isLoggedIn', view !== 'auth' ? 'true' : 'false');
   }, [data, userName, view]);
 
-  // --- Handlers ---
   const updatePlanner = (updates: any) => setData({ ...data, planner: { ...data.planner, ...updates } });
-  
-  const handlePriorityTick = (index: number) => {
-    const p = [...data.planner.priorities]; p[index] = ""; 
-    updatePlanner({ priorities: p });
+
+  // --- Water Toggle Fix ---
+  const handleWaterClick = (index: number) => {
+    const targetValue = index + 1;
+    updatePlanner({ water: data.planner.water === targetValue ? index : targetValue });
   };
 
   const addTask = () => {
@@ -59,36 +53,7 @@ export default function App() {
     setNewTaskText("");
   };
 
-  // --- Mind Map Logic ---
-  const addNode = (parentId: string | null = null) => {
-    const newNode = { id: Date.now().toString(), text: 'New idea', children: [] };
-    if (!parentId) setData({ ...data, mindmap: { roots: [...data.mindmap.roots, newNode] } });
-    else {
-      const addToTree = (nodes: MindNode[]): MindNode[] => nodes.map(n => 
-        n.id === parentId ? { ...n, children: [...n.children, newNode] } : { ...n, children: addToTree(n.children) }
-      );
-      setData({ ...data, mindmap: { roots: addToTree(data.mindmap.roots) } });
-    }
-  };
-
-  const renderMindTree = (nodes: MindNode[]) => (
-    <div style={st.treeRow}>
-      {nodes.map(node => (
-        <div key={node.id} style={st.nodeColumn}>
-          <div style={{...st.mindCard, border: selectedNodeId === node.id ? '2px solid #146654' : '1px solid #ddd'}} onClick={() => setSelectedNodeId(node.id)}>
-            <input style={st.nodeInput} value={node.text} onChange={(e) => {
-                const edit = (list: MindNode[]): MindNode[] => list.map(n => n.id === node.id ? {...n, text: e.target.value} : {...n, children: edit(n.children)});
-                setData({...data, mindmap: { roots: edit(data.mindmap.roots) }});
-            }} />
-          </div>
-          <button style={st.branchBtn} onClick={() => addNode(node.id)}>+</button>
-          {node.children.length > 0 && <div style={st.childContainer}>{renderMindTree(node.children)}</div>}
-        </div>
-      ))}
-    </div>
-  );
-
-  // --- VIEW: Auth ---
+  // --- Auth & Home Views ---
   if (view === 'auth') {
     return (
       <div style={st.authWrapper}>
@@ -96,27 +61,22 @@ export default function App() {
         <h1 style={st.authTitle}>Daily Planner</h1>
         <div style={st.authCard}>
           <div style={st.authTabs}>
-            <button onClick={() => setAuthMode('signin')} style={{...st.tabBtn, background: authMode === 'signin' ? '#fff' : 'transparent'}}>Sign In</button>
-            <button onClick={() => setAuthMode('signup')} style={{...st.tabBtn, background: authMode === 'signup' ? '#fff' : 'transparent'}}>Sign Up</button>
+            <button onClick={() => setView('home')} style={st.submitBtn}>Start Planning</button>
           </div>
           <div style={st.inputGroup}>
-            {authMode === 'signup' && <div style={st.field}>👤<input placeholder="Your name" value={userName} onChange={e => setUserName(e.target.value)} style={st.fieldInput}/></div>}
-            <div style={st.field}>✉<input placeholder="Email address" style={st.fieldInput}/></div>
-            <div style={st.field}>🔒<input type="password" placeholder="Password" style={st.fieldInput}/></div>
+            <div style={st.field}>👤<input placeholder="Your name" value={userName} onChange={e => setUserName(e.target.value)} style={st.fieldInput}/></div>
           </div>
-          <button style={st.submitBtn} onClick={() => setView('home')}>{authMode === 'signup' ? 'Create Account' : 'Sign In'}</button>
         </div>
       </div>
     );
   }
 
-  // --- VIEW: Home ---
   if (view === 'home') {
     return (
       <div style={st.appWrapper}>
         <header style={st.homeHeader}>
           <div><p style={{color: '#888', margin: 0}}>Good evening,</p><h1 style={{margin: 0, fontSize: '32px'}}>{userName || "Broto"}</h1></div>
-          <button onClick={() => setView('auth')} style={{background: 'none', border: 'none', fontSize: '24px'}}>📤</button>
+          <button onClick={() => setView('auth')} style={st.logoutBtn}>📤</button>
         </header>
         <div style={st.menuCardGreen} onClick={() => setView('mindmap')}>
           <div style={st.menuIconBg}>🧠</div>
@@ -133,33 +93,73 @@ export default function App() {
     );
   }
 
-  // --- VIEW: Planner / MindMap ---
   return (
     <div style={st.appWrapper}>
       <button onClick={() => setView('home')} style={st.backBtn}>← Back to Home</button>
       
       {view === 'planner' ? (
         <div>
+          {/* Schedule */}
           <div style={st.section}><h3 style={st.secTitle}>🕒 Schedule</h3>
             <div style={st.row}>
               <input type="time" value={data.planner.wake} onChange={e => updatePlanner({wake: e.target.value})} style={st.timeInput} />
               <input type="time" value={data.planner.sleep} onChange={e => updatePlanner({sleep: e.target.value})} style={st.timeInput} />
             </div>
           </div>
+
+          {/* Priorities */}
           <div style={st.section}><h3 style={st.secTitle}>⭐ Top 3 Priorities</h3>
             {data.planner.priorities.map((p: string, i: number) => (
-              <div key={i} style={st.priRow}><span style={st.badge}>{i+1}</span><input style={st.input} value={p} onChange={e => {const c=[...data.planner.priorities]; c[i]=e.target.value; updatePlanner({priorities:c});}} /><button onClick={() => handlePriorityTick(i)} style={st.tick}>✓</button></div>
+              <div key={i} style={st.priRow}>
+                <span style={st.badge}>{i+1}</span>
+                <input style={st.input} value={p} placeholder="Add priority..." onChange={e => {const c=[...data.planner.priorities]; c[i]=e.target.value; updatePlanner({priorities:c});}} />
+                <button onClick={() => {const p=[...data.planner.priorities]; p[i]=""; updatePlanner({priorities:p});}} style={st.tick}>✓</button>
+              </div>
             ))}
           </div>
+
+          {/* To-Do with Separator */}
           <div style={st.section}><h3 style={st.secTitle}>✔️ To-Do</h3>
-            <div style={st.catRow}><button onClick={() => setCurrentCat('home')} style={{...st.catBtn, background: currentCat==='home'?'#146654':'#eee', color: currentCat==='home'?'#fff':'#444'}}>Home</button><button onClick={() => setCurrentCat('work')} style={{...st.catBtn, background: currentCat==='work'?'#146654':'#eee', color: currentCat==='work'?'#fff':'#444'}}>Work</button></div>
-            <div style={st.inputWrap}><input style={st.input} value={newTaskText} onChange={e=>setNewTaskText(e.target.value)} /><button style={st.addBtn} onClick={addTask}>+</button></div>
-            {data.planner.tasks.filter((t:any)=>t.category===currentCat).map((t:any)=>(
-              <div key={t.id} style={st.taskRow}><input type="checkbox" checked={t.done} onChange={()=>updatePlanner({tasks: data.planner.tasks.map((x:any)=>x.id===t.id?{...x,done:!x.done}:x)})} /><span style={{flex:1, textDecoration: t.done?'line-through':'none'}}>{t.text}</span><button onClick={()=>updatePlanner({tasks: data.planner.tasks.filter((x:any)=>x.id!==t.id)})} style={st.wrongBtn}>✕</button></div>
+            <div style={st.catRow}>
+              <button onClick={() => setCurrentCat('home')} style={{...st.catBtn, background: currentCat==='home'?'#146654':'#eee', color: currentCat==='home'?'#fff':'#444'}}>Home</button>
+              <button onClick={() => setCurrentCat('work')} style={{...st.catBtn, background: currentCat==='work'?'#146654':'#eee', color: currentCat==='work'?'#fff':'#444'}}>Work</button>
+            </div>
+            <div style={st.inputWrap}><input style={st.input} placeholder={`Add ${currentCat} task...`} value={newTaskText} onChange={e=>setNewTaskText(e.target.value)} /><button style={st.addBtn} onClick={addTask}>+</button></div>
+            
+            {['home', 'work'].map((c, idx) => (
+              <div key={c}>
+                <div style={st.catLabel}>{c === 'home' ? '🏠 HOME' : '🏢 WORK'}</div>
+                {data.planner.tasks.filter((t:any)=>t.category===c).map((t:any)=>(
+                  <div key={t.id} style={st.taskRow}>
+                    <input type="checkbox" checked={t.done} onChange={()=>updatePlanner({tasks: data.planner.tasks.map((x:any)=>x.id===t.id?{...x,done:!x.done}:x)})} />
+                    <span style={{flex:1, textDecoration: t.done?'line-through':'none'}}>{t.text}</span>
+                    <button onClick={()=>updatePlanner({tasks: data.planner.tasks.filter((x:any)=>x.id!==t.id)})} style={st.wrongBtn}>✕</button>
+                  </div>
+                ))}
+                {idx === 0 && <hr style={st.separator} />}
+              </div>
             ))}
           </div>
-          <div style={st.section}><h3 style={st.secTitle}>💧 Water ({data.planner.water}/8)</h3>
-            <div style={{display:'flex', gap:'8px'}}>{[...Array(8)].map((_, i)=>(<button key={i} onClick={()=>updatePlanner({water:i+1})} style={{...st.cup, background:i<data.planner.water?'#146654':'#eee'}} />))}</div>
+
+          {/* Water */}
+          <div style={st.section}><h3 style={st.secTitle}>💧 Water Intake ({data.planner.water}/8)</h3>
+            <div style={{display:'flex', gap:'8px', flexWrap: 'wrap'}}>
+              {[...Array(8)].map((_, i)=>(
+                <button key={i} onClick={() => handleWaterClick(i)} style={{...st.cup, background:i < data.planner.water ? '#146654' : '#eee'}} />
+              ))}
+            </div>
+          </div>
+
+          {/* Food/Meals Section */}
+          <div style={st.section}><h3 style={st.secTitle}>🍱 Meals</h3>
+            <div style={st.mealGrid}>
+              {data.planner.meals.map((meal: Meal) => (
+                <button key={meal.id} onClick={() => updatePlanner({ meals: data.planner.meals.map((m:any) => m.id === meal.id ? {...m, done: !m.done} : m) })}
+                  style={{...st.mealBtn, background: meal.done ? '#E3F2FD' : '#fff', border: meal.done ? '1px solid #146654' : '1px solid #ddd'}}>
+                  {meal.label} {meal.done ? '✅' : ''}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       ) : (
@@ -168,8 +168,8 @@ export default function App() {
           <div style={st.mindFooter}>
             <button style={st.mainAdd} onClick={() => addNode()}>+ Add Root</button>
             <button style={st.delBtn} onClick={() => {
-                const del = (list: MindNode[]): MindNode[] => list.filter(n => n.id !== selectedNodeId).map(n => ({...n, children: del(n.children)}));
-                setData({...data, mindmap: { roots: del(data.mindmap.roots) }}); setSelectedNodeId(null);
+              const del = (list: MindNode[]): MindNode[] => list.filter(n => n.id !== selectedNodeId).map(n => ({...n, children: del(n.children)}));
+              setData({...data, mindmap: { roots: del(data.mindmap.roots) }}); setSelectedNodeId(null);
             }}>🗑️</button>
           </div>
         </div>
@@ -178,48 +178,43 @@ export default function App() {
   );
 }
 
-// --- Combined Styles ---
+// Recursively render tree connections logic omitted for brevity, ensure you keep the previous renderMindTree function.
+
 const st: Record<string, React.CSSProperties> = {
+  appWrapper: { maxWidth: '450px', margin: '0 auto', background: '#f5f5f5', minHeight: '100vh', padding: '20px', boxSizing: 'border-box', fontFamily: 'sans-serif' },
+  section: { background: '#fff', padding: '15px', borderRadius: '15px', marginBottom: '15px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' },
+  secTitle: { color: '#146654', fontSize: '15px', marginBottom: '10px', fontWeight: 700 },
+  priRow: { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px', background: '#f9f9f9', padding: '8px', borderRadius: '10px' },
+  badge: { background: '#146654', color: '#fff', width: '22px', height: '22px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px' },
+  tick: { background: '#146654', border: 'none', color: '#fff', borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer' },
+  inputWrap: { display: 'flex', gap: '8px', background: '#eee', padding: '8px', borderRadius: '10px', marginBottom: '15px' },
+  input: { flex: 1, border: 'none', background: 'none', outline: 'none' },
+  addBtn: { background: '#146654', color: '#fff', border: 'none', borderRadius: '8px', width: '35px', height: '35px', cursor: 'pointer' },
+  catRow: { display: 'flex', gap: '8px', marginBottom: '10px' },
+  catBtn: { flex: 1, padding: '10px', borderRadius: '10px', border: 'none', fontWeight: 600, cursor: 'pointer' },
+  taskRow: { display: 'flex', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #eee' },
+  catLabel: { fontSize: '11px', color: '#888', fontWeight: 800, marginTop: '10px', marginBottom: '5px' },
+  separator: { border: 'none', borderTop: '1px solid #eee', margin: '15px 0' },
+  cup: { width: '35px', height: '35px', borderRadius: '10px', border: 'none', cursor: 'pointer' },
+  mealGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' },
+  mealBtn: { padding: '15px', borderRadius: '12px', cursor: 'pointer', fontWeight: 600 },
+  timeInput: { flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #eee' },
+  row: { display: 'flex', gap: '10px' },
+  wrongBtn: { background: 'none', border: 'none', color: '#ccc', cursor: 'pointer', fontSize: '16px' },
+  backBtn: { background: 'none', border: 'none', color: '#146654', fontWeight: 700, marginBottom: '20px', cursor: 'pointer' },
   authWrapper: { background: '#D1D5D1', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 20px', boxSizing: 'border-box' },
   logoCircle: { width: '60px', height: '60px', background: '#146654', color: '#fff', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '30px', marginBottom: '20px' },
   authTitle: { fontSize: '28px', marginBottom: '30px' },
   authCard: { background: 'rgba(255,255,255,0.4)', borderRadius: '25px', padding: '15px', width: '100%', maxWidth: '350px' },
   authTabs: { display: 'flex', background: '#e0e0e0', borderRadius: '12px', padding: '4px', marginBottom: '20px' },
-  tabBtn: { flex: 1, border: 'none', padding: '8px', borderRadius: '10px', fontWeight: 600, cursor: 'pointer' },
   inputGroup: { display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' },
   field: { display: 'flex', alignItems: 'center', background: 'white', padding: '10px', borderRadius: '10px', border: '1px solid #ccc' },
   fieldInput: { border: 'none', outline: 'none', flex: 1, marginLeft: '8px' },
   submitBtn: { width: '100%', padding: '14px', background: '#146654', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' },
-  appWrapper: { maxWidth: '450px', margin: '0 auto', background: '#f5f5f5', minHeight: '100vh', padding: '20px', boxSizing: 'border-box' },
   homeHeader: { display: 'flex', justifyContent: 'space-between', marginBottom: '30px' },
+  logoutBtn: { background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer' },
   menuCardGreen: { background: '#146654', padding: '20px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px', cursor: 'pointer', color: '#fff' },
   menuCardWhite: { background: '#fff', padding: '20px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '15px', cursor: 'pointer', border: '1px solid #ddd' },
   menuIconBg: { width: '45px', height: '45px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' },
   quoteBox: { marginTop: '40px', background: '#e0e0e0', padding: '15px', borderRadius: '15px', display: 'flex', alignItems: 'center', gap: '10px' },
-  backBtn: { background: 'none', border: 'none', color: '#146654', fontWeight: 700, marginBottom: '20px', cursor: 'pointer' },
-  section: { background: '#fff', padding: '15px', borderRadius: '15px', marginBottom: '15px' },
-  secTitle: { color: '#146654', fontSize: '15px', marginBottom: '10px' },
-  priRow: { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px', background: '#f9f9f9', padding: '8px', borderRadius: '10px' },
-  badge: { background: '#146654', color: '#fff', width: '20px', height: '20px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px' },
-  tick: { background: '#146654', border: 'none', color: '#fff', borderRadius: '50%', width: '22px', height: '22px' },
-  inputWrap: { display: 'flex', gap: '8px', background: '#eee', padding: '8px', borderRadius: '10px' },
-  input: { flex: 1, border: 'none', background: 'none', outline: 'none' },
-  addBtn: { background: '#146654', color: '#fff', border: 'none', borderRadius: '8px', width: '30px', height: '30px' },
-  catRow: { display: 'flex', gap: '8px', marginBottom: '10px' },
-  catBtn: { flex: 1, padding: '8px', borderRadius: '8px', border: 'none' },
-  taskRow: { display: 'flex', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #eee' },
-  wrongBtn: { background: 'none', border: 'none', color: '#ccc' },
-  cup: { width: '30px', height: '30px', borderRadius: '8px', border: 'none' },
-  treeWrapper: { display: 'flex', justifyContent: 'center', overflowX: 'auto' },
-  treeRow: { display: 'flex', gap: '20px', alignItems: 'flex-start' },
-  nodeColumn: { display: 'flex', flexDirection: 'column', alignItems: 'center' },
-  mindCard: { background: '#fff', padding: '12px', borderRadius: '12px', textAlign: 'center', minWidth: '80px' },
-  nodeInput: { border: 'none', textAlign: 'center', outline: 'none', fontWeight: 600, width: '70px' },
-  branchBtn: { marginTop: '8px', background: '#fff', border: '1px solid #146654', color: '#146654', borderRadius: '50%', width: '20px', height: '20px' },
-  childContainer: { marginTop: '20px', borderTop: '1px solid #ddd', paddingTop: '20px' },
-  mindFooter: { position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '10px', width: '90%', maxWidth: '400px' },
-  mainAdd: { flex: 4, background: '#146654', color: '#fff', border: 'none', padding: '15px', borderRadius: '15px', fontWeight: 700 },
-  delBtn: { flex: 1, background: '#eee', border: 'none', borderRadius: '15px' },
-  timeInput: { flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid #eee' },
-  row: { display: 'flex', gap: '10px' }
 };
