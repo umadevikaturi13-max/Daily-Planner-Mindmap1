@@ -50,7 +50,6 @@ export default function App() {
   const [newTaskText, setNewTaskText] = useState("");
   const [currentCat, setCurrentCat] = useState<TaskCategory>('home');
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [selectedNode, setSelectedNodeId] = useState<string | null>(null);
   const [hName, setHName] = useState(""); // Add this
   const [hDays, setHDays] = useState(21); // Add this
   
@@ -272,7 +271,7 @@ export default function App() {
           </div>
         </div>
      
-      /* Habits */
+     
       {view === 'habits' && (
         <div style={{ paddingBottom: '80px' }}>
           <div style={st.section}>
