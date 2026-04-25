@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-// --- Types ---
+// --- Types & Interfaces ---
 type TaskCategory = 'home' | 'work';
 type MealKey = 'breakfast' | 'lunch' | 'dinner' | 'snacks';
 
@@ -11,9 +11,9 @@ interface Meal { id: MealKey; label: string; done: boolean; }
 export default function App() {
   const [activeTab, setActiveTab] = useState<'planner' | 'mindmap'>('planner');
   
-  // --- Unified State (Restoring All Original Features) ---
+  // --- Global State with Persistence ---
   const [data, setData] = useState(() => {
-    const saved = localStorage.getItem('complete_daily_app_data');
+    const saved = localStorage.getItem('master_daily_app_v4');
     return saved ? JSON.parse(saved) : {
       planner: { 
         wake: '07:00', 
@@ -37,19 +37,25 @@ export default function App() {
   const [currentCat, setCurrentCat] = useState<TaskCategory>('home');
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
-  // Auto-sync for Offline/Online Mode
-  useEffect(() => { localStorage.setItem('complete_daily_app_data', JSON.stringify(data)); }, [data]);
+  useEffect(() => { localStorage.setItem('master_daily_app_v4', JSON.stringify(data)); }, [data]);
 
   const updatePlanner = (updates: any) => setData({ ...data, planner: { ...data.planner, ...updates } });
 
-  // --- FEATURE: Priority Tick-to-Delete ---
+  // --- Handlers ---
+  const handleAddTask = () => {
+    if (!newTaskText.trim()) return;
+    const nt: Task = { id: Date.now().toString(), text: newTaskText, category: currentCat, done: false };
+    updatePlanner({ tasks: [...data.planner.tasks, nt] });
+    setNewTaskText("");
+  };
+
   const handlePriorityTick = (index: number) => {
     const p = [...data.planner.priorities];
     p[index] = ""; 
     updatePlanner({ priorities: p });
   };
 
-  // --- FEATURE: Tree Branching & Management ---
+  // --- Mindmap Logic ---
   const addNode = (parentId: string | null = null) => {
     const newNode = { id: Date.now().toString(), text: 'New idea', children: [] };
     if (!parentId) {
@@ -67,14 +73,10 @@ export default function App() {
       {nodes.map(node => (
         <div key={node.id} style={st.nodeColumn}>
           <div style={{...st.mindCard, border: selectedNodeId === node.id ? '2px solid #146654' : '1px solid #ddd'}} onClick={() => setSelectedNodeId(node.id)}>
-            <input 
-              style={st.nodeInput} 
-              value={node.text} 
-              onChange={(e) => {
+            <input style={st.nodeInput} value={node.text} onChange={(e) => {
                 const edit = (list: MindNode[]): MindNode[] => list.map(n => n.id === node.id ? {...n, text: e.target.value} : {...n, children: edit(n.children)});
                 setData({...data, mindmap: { roots: edit(data.mindmap.roots) }});
-              }}
-            />
+            }} />
           </div>
           <button style={st.branchBtn} onClick={() => addNode(node.id)}>+</button>
           {node.children.length > 0 && <div style={st.childContainer}>{renderMindTree(node.children)}</div>}
@@ -93,7 +95,7 @@ export default function App() {
       <div style={st.content}>
         {activeTab === 'planner' ? (
           <div>
-            {/* Schedule Section */}
+            {/* Schedule */}
             <div style={st.section}>
               <h3 style={st.secTitle}>🕒 Schedule</h3>
               <div style={st.row}>
@@ -102,7 +104,7 @@ export default function App() {
               </div>
             </div>
 
-            {/* Priorities (Tick-to-Delete) */}
+            {/* Priorities */}
             <div style={st.section}>
               <h3 style={st.secTitle}>⭐ Top 3 Priorities</h3>
               {data.planner.priorities.map((p: string, i: number) => (
@@ -116,7 +118,7 @@ export default function App() {
               ))}
             </div>
 
-            {/* To-Do (X-to-Remove) */}
+            {/* To-Do with Add Button inside input wrapper */}
             <div style={st.section}>
               <h3 style={st.secTitle}>✔️ To-Do</h3>
               <div style={st.catRow}>
@@ -124,10 +126,14 @@ export default function App() {
                 <button onClick={() => setCurrentCat('work')} style={{...st.catBtn, background: currentCat === 'work' ? '#146654' : '#eee', color: currentCat === 'work' ? '#fff' : '#444'}}>🏢 Work</button>
               </div>
               <div style={st.inputWrap}>
-                <input style={st.input} placeholder={`Add ${currentCat} task...`} value={newTaskText} onChange={e => setNewTaskText(e.target.value)} onKeyDown={e => e.key === 'Enter' && (()=>{
-                    const nt = { id: Date.now().toString(), text: newTaskText, category: currentCat, done: false };
-                    updatePlanner({ tasks: [...data.planner.tasks, nt] }); setNewTaskText("");
-                })()} />
+                <input 
+                  style={st.input} 
+                  placeholder={`Add a ${currentCat} task`} 
+                  value={newTaskText} 
+                  onChange={e => setNewTaskText(e.target.value)} 
+                  onKeyDown={e => e.key === 'Enter' && handleAddTask()} 
+                />
+                <button style={st.addBtn} onClick={handleAddTask}>+</button>
               </div>
               {['home', 'work'].map(c => (
                 <div key={c} style={{marginTop: '15px'}}>
@@ -143,7 +149,7 @@ export default function App() {
               ))}
             </div>
 
-            {/* Water Tracking */}
+            {/* Water */}
             <div style={st.section}>
               <h3 style={st.secTitle}>💧 Water Intake ({data.planner.water}/8)</h3>
               <div style={st.waterGrid}>
@@ -154,7 +160,7 @@ export default function App() {
               </div>
             </div>
 
-            {/* Meal Tracking */}
+            {/* Meals */}
             <div style={st.section}>
               <h3 style={st.secTitle}>🍱 Meals</h3>
               <div style={st.mealGrid}>
@@ -174,16 +180,16 @@ export default function App() {
             </div>
           </div>
         ) : (
-          /* Mind Map Section */
+          /* Mind Map View */
           <div style={st.mindCanvas}>
-            <div style={st.treeWrapper}>{renderMindTree(data.mindmap.roots)}</div>
-            <div style={st.mindFooter}>
-              <button style={st.mainAdd} onClick={() => addNode()}>+ Add Root</button>
-              <button style={st.delBtn} onClick={() => {
-                const del = (list: MindNode[]): MindNode[] => list.filter(n => n.id !== selectedNodeId).map(n => ({...n, children: del(n.children)}));
-                setData({...data, mindmap: { roots: del(data.mindmap.roots) }}); setSelectedNodeId(null);
-              }}>🗑️</button>
-            </div>
+             <div style={st.treeWrapper}>{renderMindTree(data.mindmap.roots)}</div>
+             <div style={st.mindFooter}>
+               <button style={st.mainAdd} onClick={() => addNode()}>+ Add Root</button>
+               <button style={st.delBtn} onClick={() => {
+                 const del = (list: MindNode[]): MindNode[] => list.filter(n => n.id !== selectedNodeId).map(n => ({...n, children: del(n.children)}));
+                 setData({...data, mindmap: { roots: del(data.mindmap.roots) }}); setSelectedNodeId(null);
+               }}>🗑️</button>
+             </div>
           </div>
         )}
       </div>
@@ -192,40 +198,41 @@ export default function App() {
 }
 
 const st: Record<string, React.CSSProperties> = {
-  app: { maxWidth: '450px', margin: '0 auto', background: '#f8f9fa', minHeight: '100vh', fontFamily: 'sans-serif' },
+  app: { maxWidth: '450px', margin: '0 auto', background: '#f5f5f5', minHeight: '100vh', fontFamily: 'sans-serif' },
   tabs: { display: 'flex', background: '#fff', borderBottom: '1px solid #ddd', position: 'sticky', top: 0, zIndex: 100 },
   tabBtn: { flex: 1, padding: '15px', border: 'none', background: 'none', fontWeight: 700, cursor: 'pointer' },
   content: { padding: '15px', paddingBottom: '100px' },
-  section: { background: '#fff', borderRadius: '15px', padding: '15px', marginBottom: '15px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' },
+  section: { background: '#fff', borderRadius: '15px', padding: '15px', marginBottom: '15px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' },
   secTitle: { fontSize: '15px', color: '#146654', marginBottom: '12px', fontWeight: 700 },
   row: { display: 'flex', gap: '15px' },
   timeBlock: { flex: 1, display: 'flex', flexDirection: 'column', gap: '5px' },
   timeInput: { padding: '10px', borderRadius: '8px', border: '1px solid #eee' },
-  priRow: { display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' },
-  badge: { background: '#146654', color: '#fff', width: '22px', height: '22px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px' },
-  input: { flex: 1, border: 'none', borderBottom: '1px solid #eee', padding: '8px', outline: 'none' },
-  tick: { background: '#146654', color: '#fff', border: 'none', borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer' },
+  priRow: { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px', background: '#f9f9f9', padding: '10px', borderRadius: '12px' },
+  badge: { background: '#146654', color: '#fff', width: '22px', height: '22px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' },
+  input: { flex: 1, border: 'none', background: 'none', outline: 'none', padding: '5px' },
+  tick: { background: '#146654', color: '#fff', border: 'none', borderRadius: '50%', width: '25px', height: '25px', cursor: 'pointer' },
   catRow: { display: 'flex', gap: '8px', marginBottom: '12px' },
   catBtn: { flex: 1, padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: 600 },
-  inputWrap: { background: '#f5f5f5', padding: '8px', borderRadius: '12px' },
-  taskRow: { display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 0', borderBottom: '1px solid #f9f9f9' },
-  wrongBtn: { background: 'none', border: 'none', color: '#ccc', cursor: 'pointer' },
+  inputWrap: { display: 'flex', background: '#f0f0f0', padding: '8px', borderRadius: '15px', alignItems: 'center', gap: '10px' },
+  addBtn: { background: '#146654', color: '#fff', border: 'none', borderRadius: '10px', width: '35px', height: '35px', cursor: 'pointer', fontSize: '20px', fontWeight: 700 },
+  taskRow: { display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 0', borderBottom: '1px solid #eee' },
+  wrongBtn: { background: 'none', border: 'none', color: '#ccc', cursor: 'pointer', fontSize: '16px' },
   waterGrid: { display: 'flex', gap: '8px', flexWrap: 'wrap' },
-  cup: { width: '32px', height: '32px', borderRadius: '8px', border: 'none', cursor: 'pointer' },
+  cup: { width: '35px', height: '35px', borderRadius: '10px', border: 'none', cursor: 'pointer' },
   mealGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' },
   mealBtn: { padding: '15px', borderRadius: '12px', cursor: 'pointer', fontWeight: 600 },
   notesArea: { width: '100%', minHeight: '80px', borderRadius: '12px', border: '1px solid #eee', padding: '10px', resize: 'none' },
+  catLabel: { fontSize: '11px', color: '#888', fontWeight: 700 },
   // Mindmap
   mindCanvas: { position: 'relative', overflowX: 'auto' },
   treeWrapper: { display: 'flex', justifyContent: 'center', padding: '20px' },
-  treeRow: { display: 'flex', gap: '25px', alignItems: 'flex-start' },
+  treeRow: { display: 'flex', gap: '30px', alignItems: 'flex-start' },
   nodeColumn: { display: 'flex', flexDirection: 'column', alignItems: 'center' },
   mindCard: { background: '#fff', padding: '12px', borderRadius: '12px', minWidth: '90px', textAlign: 'center', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' },
   nodeInput: { border: 'none', textAlign: 'center', width: '80px', outline: 'none', fontWeight: 600 },
-  branchBtn: { marginTop: '8px', background: '#fff', border: '1px solid #146654', color: '#146654', width: '20px', height: '20px', borderRadius: '50%', cursor: 'pointer' },
+  branchBtn: { marginTop: '8px', background: '#fff', border: '1px solid #146654', color: '#146654', width: '22px', height: '22px', borderRadius: '50%', cursor: 'pointer' },
   childContainer: { marginTop: '25px', borderTop: '1px solid #ddd', paddingTop: '20px' },
   mindFooter: { position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '10px', width: '90%', maxWidth: '400px' },
   mainAdd: { flex: 4, background: '#146654', color: '#fff', border: 'none', padding: '15px', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' },
-  delBtn: { flex: 1, background: '#eee', border: 'none', borderRadius: '15px', cursor: 'pointer' },
-  catLabel: { fontSize: '11px', color: '#888', fontWeight: 700 }
+  delBtn: { flex: 1, background: '#eee', border: 'none', borderRadius: '15px', cursor: 'pointer' }
 };
