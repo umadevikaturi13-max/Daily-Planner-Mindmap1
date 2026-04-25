@@ -34,14 +34,12 @@ const INITIAL_DATA = {
 };
 
 export default function App() {
-  // --- Auth & Navigation ---
   const [view, setView] = useState<ViewState>(() => localStorage.getItem('isLoggedIn') === 'true' ? 'home' : 'auth');
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signup');
   const [userName, setUserName] = useState(() => localStorage.getItem('userName') || "");
 
-  // --- Feature States ---
   const [data, setData] = useState(() => {
-    const saved = localStorage.getItem('master_daily_app_v26');
+    const saved = localStorage.getItem('master_daily_app_v27');
     return saved ? JSON.parse(saved) : INITIAL_DATA;
   });
 
@@ -51,27 +49,25 @@ export default function App() {
   const [hName, setHName] = useState("");
   const [hDays, setHDays] = useState(21);
 
-  // --- Offline Engine (Syncs everything) ---
   useEffect(() => {
-    localStorage.setItem('master_daily_app_v26', JSON.stringify(data));
+    localStorage.setItem('master_daily_app_v27', JSON.stringify(data));
     localStorage.setItem('userName', userName);
     localStorage.setItem('isLoggedIn', view !== 'auth' ? 'true' : 'false');
   }, [data, userName, view]);
 
-  // --- Planner Handlers ---
+  // Handlers
   const updatePlanner = (updates: any) => setData((prev: any) => ({ ...prev, planner: { ...prev.planner, ...updates } }));
   const handleAddTask = () => {
     if (!newTaskText.trim()) return;
     updatePlanner({ tasks: [...data.planner.tasks, { id: Date.now().toString(), text: newTaskText, category: currentCat, done: false }] });
     setNewTaskText("");
   };
+  const handleToggleTask = (id: string) => updatePlanner({ tasks: data.planner.tasks.map((t: Task) => t.id === id ? { ...t, done: !t.done } : t) });
+  const handleDeleteTask = (id: string) => updatePlanner({ tasks: data.planner.tasks.filter((t: Task) => t.id !== id) });
   const handlePriorityTick = (i: number) => { const p = [...data.planner.priorities]; p[i] = ""; updatePlanner({ priorities: p }); };
-  const handleWater = (idx: number) => { 
-    const target = idx + 1; 
-    updatePlanner({ water: data.planner.water === target ? idx : target }); 
-  };
+  const handleWater = (idx: number) => { const target = idx + 1; updatePlanner({ water: data.planner.water === target ? idx : target }); };
 
-  // --- Mind Map Handlers ---
+  // Mind Map Logic
   const addMindNode = (parentId: string | null = null) => {
     const newNode = { id: Date.now().toString(), text: 'New idea', children: [] };
     if (!parentId) setData((prev: any) => ({ ...prev, mindmap: { roots: [...prev.mindmap.roots, newNode] } }));
@@ -101,10 +97,9 @@ export default function App() {
   );
 
   /**
-   * 3. RENDERING VIEWS
+   * RENDERING VIEWS
    */
 
-  // AUTH VIEW (Matching Design)
   if (view === 'auth') return (
     <div style={st.authWrapper}>
       <div style={st.logoCircle}>☑</div>
@@ -124,7 +119,6 @@ export default function App() {
     </div>
   );
 
-  // HOME VIEW (Matching Greeting)
   if (view === 'home') return (
     <div style={st.appWrapper}>
       <header style={st.homeHeader}>
@@ -133,6 +127,7 @@ export default function App() {
       </header>
       <div style={st.menuCardGreen} onClick={() => setView('habits')}><div style={st.menuIconBg}>✨</div><div style={{flex: 1}}><h4 style={{margin: 0, color: '#fff'}}>Habit Tracker</h4><p style={{margin: 0, fontSize: '12px', color: '#fff', opacity: 0.8}}>Consistent Progress</p></div><span>→</span></div>
       <div style={st.menuCardWhite} onClick={() => setView('planner')}><div style={{...st.menuIconBg, background: '#e8f2f0', color: '#146654'}}>📅</div><div style={{flex: 1}}><h4 style={{margin: 0}}>Daily Planner</h4><p style={{margin: 0, fontSize: '12px', color: '#888'}}>Tasks & Schedule</p></div><span>→</span></div>
+      {/* Mind Map card now consistent with outline borders */}
       <div style={st.menuCardWhite} onClick={() => setView('mindmap')} style={{marginTop: '15px'}}><div style={{...st.menuIconBg, background: '#f5f5f5', color: '#333'}}>🧠</div><div style={{flex: 1}}><h4 style={{margin: 0}}>Mind Map</h4><p style={{margin: 0, fontSize: '12px', color: '#888'}}>Idea branching</p></div><span>→</span></div>
       <div style={st.quoteBox}>☀️ <p style={{margin: 0, fontSize: '14px', color: '#555'}}>Small steps lead to big changes.</p></div>
     </div>
@@ -141,9 +136,29 @@ export default function App() {
   return (
     <div style={st.appWrapper}>
       <button onClick={() => setView('home')} style={st.backBtn}>← Back to Home</button>
-
-      {view === 'planner' && (
+      
+      {view === 'planner' ? (
         <div>
+          <header style={{marginBottom: '20px'}}>
+             <h1 style={{fontSize: '28px', fontWeight: 700, margin: 0}}>{new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</h1>
+             <p style={{color: '#888', fontSize: '14px'}}>Today's plan</p>
+          </header>
+
+          {/* Corrected Schedule UI from Screenshot */}
+          <div style={st.section}>
+            <h3 style={st.secTitle}>🕒 Schedule</h3>
+            <div style={st.row}>
+              <div style={st.timeInputBox}>
+                <label style={st.timeLabel}>Wake up</label>
+                <input type="time" value={data.planner.wake} onChange={e => updatePlanner({wake: e.target.value})} style={st.timeInput} />
+              </div>
+              <div style={st.timeInputBox}>
+                <label style={st.timeLabel}>Sleep</label>
+                <input type="time" value={data.planner.sleep} onChange={e => updatePlanner({sleep: e.target.value})} style={st.timeInput} />
+              </div>
+            </div>
+          </div>
+
           <div style={st.section}><h3 style={st.secTitle}>⭐ Top 3 Priorities</h3>
             {data.planner.priorities.map((p: string, i: number) => (
               <div key={i} style={st.priRow}><span style={st.badge}>{i+1}</span><input style={st.input} value={p} onChange={e => {const c=[...data.planner.priorities]; c[i]=e.target.value; updatePlanner({priorities:c});}} /><button onClick={() => handlePriorityTick(i)} style={st.tick}>✓</button></div>
@@ -157,7 +172,7 @@ export default function App() {
               <div key={idx}>
                 <div style={st.catLabel}>{c.toUpperCase()}</div>
                 {data.planner.tasks.filter((t:any)=>t.category===c).map((t:any)=>(
-                  <div key={t.id} style={st.taskRow}><input type="checkbox" checked={t.done} onChange={()=>updatePlanner({tasks: data.planner.tasks.map((x:any)=>x.id===t.id?{...x,done:!x.done}:x)})} /><span style={{flex:1, textDecoration: t.done?'line-through':'none'}}>{t.text}</span><button onClick={()=>updatePlanner({tasks: data.planner.tasks.filter((x:any)=>x.id!==t.id)})} style={st.wrongBtn}>✕</button></div>
+                  <div key={t.id} style={st.taskRow}><input type="checkbox" checked={t.done} onChange={()=>handleToggleTask(t.id)} /><span style={{flex:1, textDecoration: t.done?'line-through':'none'}}>{t.text}</span><button onClick={()=>handleDeleteTask(t.id)} style={st.wrongBtn}>✕</button></div>
                 ))}
                 {idx===0 && <hr style={st.separator}/>}
               </div>
@@ -169,54 +184,24 @@ export default function App() {
           </div>
 
           <div style={st.section}><h3 style={st.secTitle}>🍱 Meals</h3>
-            <div style={st.mealGrid}>{data.planner.meals.map((m: any) => (<button key={m.id} onClick={() => updatePlanner({ meals: data.planner.meals.map((x:any) => x.id === m.id ? {...x, done: !x.done} : x) })} style={{...st.mealBtn, background: m.done?'#E3F2FD':'#fff', border: m.done?'1px solid #146654':'1px solid #ddd'}}>{m.label} {m.done?'✅':''}</button>))}</div>
-          </div>
-
-          <div style={st.section}><h3 style={st.secTitle}>📝 Notes</h3>
-            <textarea style={st.notesArea} value={data.planner.notes} onChange={e => updatePlanner({notes: e.target.value})} placeholder="Reflections..." />
+            <div style={st.mealGrid}>{data.planner.meals.map((m: any) => (<button key={m.id} onClick={() => updatePlanner({ meals: data.planner.meals.map((x:any) => x.id === m.id ? {...m, done: !m.done} : x) })} style={{...st.mealBtn, background: m.done?'#E3F2FD':'#fff', border: m.done?'1px solid #146654':'1px solid #ddd'}}>{m.label} {m.done?'✅':''}</button>))}</div>
           </div>
         </div>
-      )}
-
-      {view === 'habits' && (
+      ) : view === 'habits' ? (
         <div>
-          <div style={st.section}><h3 style={st.secTitle}>✨ New Habit</h3>
-            <div style={st.inputWrap}>
-              <input style={st.input} placeholder="Habit name..." value={hName} onChange={e=>setHName(e.target.value)} />
-              <input type="number" style={{width:'40px', border:'none'}} value={hDays} onChange={e=>setHDays(Number(e.target.value))} />
-              <button style={st.addBtn} onClick={() => { if(!hName) return; setData({...data, habits:[...data.habits, {id:Date.now().toString(), name:hName, totalDays:hDays, completed:{}}]}); setHName(""); }}>+</button>
-            </div>
-          </div>
-          {data.habits.map((h: Habit) => (
-            <div key={h.id} style={st.habitRowItem}>
-              <div style={st.habitNameFixed}>
-                <div style={{fontWeight: 700}}>{h.name}</div>
-                <div style={{fontSize:'11px', color:'#146654'}}>{Object.values(h.completed).filter(v=>v).length}/{h.totalDays}</div>
-                <button onClick={() => setData({...data, habits: data.habits.filter(x=>x.id!==h.id)})} style={st.delHabit}>Delete</button>
-              </div>
-              <div style={st.habitScrollGrid}>
-                {[...Array(h.totalDays)].map((_, i) => (
-                  <button key={i} onClick={() => {
-                      const newH = data.habits.map(x => x.id === h.id ? {...x, completed: {...x.completed, [i]: !x.completed[i]}} : x);
-                      setData({...data, habits: newH});
-                    }} style={{...st.dayCircle, color: h.completed[i] ? '#146654' : '#ccc'}}>{h.completed[i] ? '✓' : '✕'}</button>
-                ))}
-              </div>
-            </div>
-          ))}
+           <div style={st.section}><h3 style={st.secTitle}>✨ New Habit</h3>
+             <div style={st.inputWrap}><input style={st.input} placeholder="Name" value={hName} onChange={e=>setHName(e.target.value)} /><input type="number" style={{width:'40px', border:'none'}} value={hDays} onChange={e=>setHDays(Number(e.target.value))} /><button style={st.addBtn} onClick={() => { if(!hName) return; setData({...data, habits:[...data.habits, {id:Date.now().toString(), name:hName, totalDays:hDays, completed:{}}]}); setHName(""); }}>+</button></div>
+           </div>
+           {data.habits.map((h: Habit) => (
+             <div key={h.id} style={st.habitRowItem}><div style={st.habitNameFixed}><div style={{fontWeight: 700}}>{h.name}</div><div style={{fontSize:'11px', color:'#146654'}}>{Object.values(h.completed).filter(v=>v).length}/{h.totalDays}</div><button onClick={() => setData({...data, habits: data.habits.filter(x=>x.id!==h.id)})} style={st.delHabit}>Delete</button></div><div style={st.habitScrollGrid}>{[...Array(h.totalDays)].map((_, i) => (<button key={i} onClick={() => { const newH = data.habits.map(x => x.id === h.id ? {...x, completed: {...x.completed, [i]: !x.completed[i]}} : x); setData({...data, habits: newH}); }} style={{...st.dayCircle, color: h.completed[i] ? '#146654' : '#ccc'}}>{h.completed[i] ? '✓' : '✕'}</button>))}</div></div>
+           ))}
         </div>
-      )}
-
-      {view === 'mindmap' && (
+      ) : (
         <div style={st.mindCanvas}>
           <div style={st.treeWrapper}>{renderMindTree(data.mindmap.roots)}</div>
           <div style={st.mindFooter}>
             <button style={st.mainAdd} onClick={() => addMindNode()}>+ Add Root</button>
-            <button style={st.delBtn} onClick={() => { 
-                if(!selectedNodeId) return; 
-                const del = (nodes: MindNode[]): MindNode[] => nodes.filter(n => n.id !== selectedNodeId).map(n => ({...n, children: del(n.children)})); 
-                setData({...data, mindmap: { roots: del(data.mindmap.roots) }}); setSelectedNodeId(null); 
-            }}>🗑️</button>
+            <button style={st.delBtn} onClick={() => { if(!selectedNodeId) return; const del = (nodes: MindNode[]): MindNode[] => nodes.filter(n => n.id !== selectedNodeId).map(n => ({...n, children: del(n.children)})); setData({...data, mindmap: { roots: del(data.mindmap.roots) }}); setSelectedNodeId(null); }}>🗑️</button>
           </div>
         </div>
       )}
@@ -224,13 +209,11 @@ export default function App() {
   );
 }
 
-/**
- * 4. ALL STYLES (Single Code Consistent Design)
- */
 const st: Record<string, React.CSSProperties> = {
-  authWrapper: { background: '#D1D5D1', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 20px', boxSizing: 'border-box', fontFamily: 'sans-serif' },
+  appWrapper: { maxWidth: '450px', margin: '0 auto', background: '#f5f5f5', minHeight: '100vh', padding: '20px', boxSizing: 'border-box', fontFamily: 'sans-serif' },
+  authWrapper: { background: '#D1D5D1', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 20px', boxSizing: 'border-box' },
   logoCircle: { width: '60px', height: '60px', background: '#146654', color: '#fff', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '30px', marginBottom: '20px' },
-  authTitle: { fontSize: '28px', marginBottom: '20px' },
+  authTitle: { fontSize: '28px', marginBottom: '30px' },
   authCard: { background: 'rgba(255,255,255,0.4)', borderRadius: '25px', padding: '15px', width: '100%', maxWidth: '350px' },
   authTabs: { display: 'flex', background: '#e0e0e0', borderRadius: '12px', padding: '4px', marginBottom: '20px' },
   tabBtn: { flex: 1, border: 'none', padding: '8px', borderRadius: '10px', fontWeight: 600, cursor: 'pointer' },
@@ -238,22 +221,25 @@ const st: Record<string, React.CSSProperties> = {
   field: { display: 'flex', alignItems: 'center', background: 'white', padding: '10px', borderRadius: '10px', border: '1px solid #ccc' },
   fieldInput: { border: 'none', outline: 'none', flex: 1, marginLeft: '8px' },
   submitBtn: { width: '100%', padding: '14px', background: '#146654', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' },
-  appWrapper: { maxWidth: '450px', margin: '0 auto', background: '#f5f5f5', minHeight: '100vh', padding: '20px', boxSizing: 'border-box', fontFamily: 'sans-serif' },
   homeHeader: { display: 'flex', justifyContent: 'space-between', marginBottom: '30px' },
   logoutBtn: { background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer' },
   menuCardGreen: { background: '#146654', padding: '20px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px', cursor: 'pointer', color: '#fff' },
   menuCardWhite: { background: '#fff', padding: '20px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '15px', cursor: 'pointer', border: '1px solid #ddd' },
   menuIconBg: { width: '45px', height: '45px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' },
+  quoteBox: { marginTop: '40px', background: '#e0e0e0', padding: '15px', borderRadius: '15px', display: 'flex', alignItems: 'center', gap: '10px' },
   backBtn: { background: 'none', border: 'none', color: '#146654', fontWeight: 700, marginBottom: '20px', cursor: 'pointer' },
-  section: { background: '#fff', padding: '15px', borderRadius: '15px', marginBottom: '15px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' },
+  section: { background: '#fff', padding: '15px', borderRadius: '15px', marginBottom: '15px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' },
   secTitle: { color: '#146654', fontSize: '15px', marginBottom: '12px', fontWeight: 700 },
-  priRow: { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px', background: '#f9f9f9', padding: '8px', borderRadius: '10px' },
+  timeInputBox: { flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' },
+  timeLabel: { fontSize: '12px', color: '#888', fontWeight: 500 },
+  timeInput: { padding: '10px', borderRadius: '10px', border: '1px solid #eee', background: '#f9f9f9', outline: 'none' },
+  priRow: { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px', background: '#f9f9f9', padding: '10px', borderRadius: '12px' },
   badge: { background: '#146654', color: '#fff', width: '22px', height: '22px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px' },
-  tick: { background: '#146654', border: 'none', color: '#fff', borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer' },
+  tick: { background: '#146654', border: 'none', color: '#fff', borderRadius: '50%', width: '26px', height: '26px', cursor: 'pointer' },
   catRow: { display: 'flex', gap: '8px', marginBottom: '10px' },
   catBtn: { flex: 1, padding: '10px', borderRadius: '10px', border: 'none', fontWeight: 600, cursor: 'pointer' },
   inputWrap: { display: 'flex', gap: '8px', background: '#eee', padding: '8px', borderRadius: '10px', marginBottom: '15px' },
-  input: { flex: 1, border: 'none', background: 'none', outline: 'none', fontSize: '14px' },
+  input: { flex: 1, border: 'none', background: 'none', outline: 'none' },
   addBtn: { background: '#146654', color: '#fff', border: 'none', borderRadius: '8px', width: '35px', height: '35px', cursor: 'pointer' },
   taskRow: { display: 'flex', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #f9f9f9', gap: '10px' },
   catLabel: { fontSize: '11px', color: '#888', fontWeight: 800, marginTop: '10px', marginBottom: '5px' },
@@ -262,7 +248,6 @@ const st: Record<string, React.CSSProperties> = {
   cup: { width: '32px', height: '32px', borderRadius: '8px', border: 'none', cursor: 'pointer' },
   mealGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' },
   mealBtn: { padding: '15px', borderRadius: '12px', cursor: 'pointer', fontWeight: 600 },
-  notesArea: { width: '100%', minHeight: '80px', borderRadius: '12px', border: '1px solid #eee', padding: '10px', resize: 'none' },
   habitRowItem: { display: 'flex', background: '#fff', borderRadius: '15px', marginBottom: '12px', overflow: 'hidden', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' },
   habitNameFixed: { position: 'sticky', left: 0, background: '#fff', padding: '15px', minWidth: '100px', borderRight: '1px solid #eee', zIndex: 2, display: 'flex', flexDirection: 'column', justifyContent: 'center' },
   habitScrollGrid: { display: 'flex', overflowX: 'auto', padding: '12px', gap: '10px', alignItems: 'center' },
@@ -279,5 +264,5 @@ const st: Record<string, React.CSSProperties> = {
   mindFooter: { position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '10px', width: '90%', maxWidth: '400px' },
   mainAdd: { flex: 4, background: '#146654', color: '#fff', border: 'none', padding: '15px', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' },
   delBtn: { flex: 1, background: '#eee', border: 'none', borderRadius: '15px', cursor: 'pointer' },
-  quoteBox: { marginTop: '40px', background: '#e0e0e0', padding: '15px', borderRadius: '15px', display: 'flex', alignItems: 'center', gap: '10px' },
+  row: { display: 'flex', gap: '10px' }
 };
