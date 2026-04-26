@@ -111,7 +111,8 @@ export default function App() {
       </div>
     </div>
   );
-
+}
+  
   if (view === 'home') return (
     <div style={st.appWrapper}>
       <header style={st.homeHeader}>
