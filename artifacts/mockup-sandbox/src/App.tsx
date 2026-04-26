@@ -226,9 +226,21 @@ const st: Record<string, React.CSSProperties> = {
   habitScrollGrid: { display: 'flex', overflowX: 'auto', padding: '12px', gap: '10px', alignItems: 'center' },
   dayCircle: { minWidth: '35px', height: '35px', borderRadius: '50%', border: '1px solid #eee', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 },
   delHabit: { border: 'none', background: 'none', color: '#ff4d4d', fontSize: '10px', padding: 0, marginTop: '5px', textAlign: 'left', cursor: 'pointer' },
-  mindCanvas: { position: 'relative', overflowY:'auto',minHeight: '70vh' ,paddingBottom: '120px'},
+ mindCanvas: {
+  position: 'relative',
+  width: '3000px',       // Creates a huge horizontal space
+  height: '3000px',      // Creates a huge vertical space
+  padding: '100px',
+  display: 'flex',
+  justifyContent: 'center'
+  },
   treeWrapper: { display: 'flex', justifyContent: 'center', padding: '20px' },
-  treeRow: { display: 'flex', gap: '25px', alignItems: 'flex-start' , flexWrap: 'wrap', justifyContent: 'center'},
+  treeRow: {
+  display: 'flex',
+  flexDirection: 'row',  // Forces nodes to stay side-by-side
+  alignItems: 'flex-start',
+  gap: '50px',           // Space between the branches
+},
   nodeColumn: { display: 'flex', flexDirection: 'column', alignItems: 'center' },
   mindCard: { background: '#fff', padding: '12px', borderRadius: '12px', minWidth: '90px', textAlign: 'center', boxShadow: '0 2px 5px rgba(0,0,0,0.05)', cursor: 'pointer' },
   nodeInput: { border: 'none', textAlign: 'center', width: '80px', outline: 'none', fontWeight: 600, background: 'none' },
