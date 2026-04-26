@@ -226,7 +226,7 @@ const st: Record<string, React.CSSProperties> = {
   habitScrollGrid: { display: 'flex', overflowX: 'auto', padding: '12px', gap: '10px', alignItems: 'center' },
   dayCircle: { minWidth: '35px', height: '35px', borderRadius: '50%', border: '1px solid #eee', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 },
   delHabit: { border: 'none', background: 'none', color: '#ff4d4d', fontSize: '10px', padding: 0, marginTop: '5px', textAlign: 'left', cursor: 'pointer' },
-  mindCanvas: { position: 'relative', overflowX: 'auto', overflowY:'auto',minHeight: '70vh' ,paddingBottom: '120px'},
+  mindCanvas: { position: 'relative', overflowY:'auto',minHeight: '70vh' ,paddingBottom: '120px'},
   treeWrapper: { display: 'flex', justifyContent: 'center', padding: '20px' },
   treeRow: { display: 'flex', gap: '25px', alignItems: 'flex-start' , flexWrap: 'wrap', justifyContent: 'center'},
   nodeColumn: { display: 'flex', flexDirection: 'column', alignItems: 'center' },
