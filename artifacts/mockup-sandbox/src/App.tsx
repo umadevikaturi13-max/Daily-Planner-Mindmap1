@@ -189,7 +189,15 @@ export default function App() {
 }
 
 const st: Record<string, React.CSSProperties> = {
-  appWrapper: { maxWidth: '450px', margin: '0 auto', background: '#f5f5f5', minHeight: '100vh', padding: '20px', boxSizing: 'border-box', fontFamily: 'sans-serif' },
+  appWrapper: {
+  minWidth: '100vw',      // Full screen width at minimum
+  minHeight: '100vh',
+  backgroundColor: '#f5f5f5', // This extends the grey to the whole screen
+  overflowX: 'auto',      // CRITICAL: This allows horizontal scrolling
+  margin: 0,
+  padding: 0,
+  fontFamily: 'sans-serif'
+},
   authWrapper: { background: '#D1D5D1', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 20px', boxSizing: 'border-box', justifyContent: 'center' },
   logoCircle: { width: '60px', height: '60px', background: '#146654', color: '#fff', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '30px', marginBottom: '20px' },
   authTitle: { fontSize: '28px', marginBottom: '30px' },
@@ -228,12 +236,14 @@ const st: Record<string, React.CSSProperties> = {
   delHabit: { border: 'none', background: 'none', color: '#ff4d4d', fontSize: '10px', padding: 0, marginTop: '5px', textAlign: 'left', cursor: 'pointer' },
  mindCanvas: {
   position: 'relative',
-  width: '500px',       // Creates a huge horizontal space
-  height: '100px',      // Creates a huge vertical space
-  padding: '100px',
+  width: 'max-content',   // Tells the grey part to grow as wide as your boxes
+  minWidth: '100vw',
+  minHeight: '100vh',
+  padding: '80px 40px',
   display: 'flex',
-  justifyContent: 'center'
-  },
+  flexDirection: 'column',
+  alignItems: 'center',
+},
   treeWrapper: { display: 'flex', justifyContent: 'center', padding: '20px' },
   treeRow: {
   display: 'flex',
