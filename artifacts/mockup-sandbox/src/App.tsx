@@ -186,7 +186,7 @@ export default function App() {
           <div style={st.section}><h3 style={st.secTitle}>🍱 Meals</h3>
             <div style={st.mealGrid}>{data.planner.meals.map((m: any) => (<button key={m.id} onClick={() => updatePlanner({ meals: data.planner.meals.map((x:any) => x.id === m.id ? {...m, done: !m.done} : x) })} style={{...st.mealBtn, background: m.done?'#E3F2FD':'#fff', border: m.done?'1px solid #146654':'1px solid #ddd'}}>{m.label} {m.done?'✅':''}</button>))}</div>
           </div>
-          
+        </div>
           {/* --- Notes Section --- */}
   <div style={st.section}>
     <h3 style={st.secTitle}>📝 Notes</h3>
@@ -196,8 +196,8 @@ export default function App() {
       onChange={e => updatePlanner({notes: e.target.value})} 
       placeholder="Reflections, gratitude, or ideas..." 
     />
-  </div>
-        </div>
+  </div>        
+          
       ) : view === 'habits' ? (
         <div>
            <div style={st.section}><h3 style={st.secTitle}>✨ New Habit</h3>
