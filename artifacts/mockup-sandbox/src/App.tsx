@@ -20,7 +20,6 @@ const INITIAL_DATA = {
       { id: 'dinner', label: 'Dinner', done: false },
       { id: 'snacks', label: 'Snacks', done: false }
     ] as Meal[],
-    water: 0,
     notes: '' 
   },
   mindmap: { roots: [] as MindNode[] },
