@@ -165,17 +165,16 @@ export default function App() {
           </div>
 
           {/* Water Intake Section */}
-<div style={st.section}>
+          <div style={st.section}>
   <h3 style={st.secTitle}>💧 Water Intake</h3>
   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '10px' }}>
     {[1, 2, 3, 4, 5, 6, 7, 8].map((glass) => (
       <button 
         key={glass}
         onClick={() => {
-  const currentWater = data.planner.water || 0;
-  // If clicking the same glass that is already active, decrease water by 1
-  const newValue = currentWater === glass ? glass - 1 : glass;
-  updatePlanner({ water: newValue });
+          const currentWater = data.planner.water || 0;
+          const newValue = currentWater === glass ? glass - 1 : glass;
+          updatePlanner({ water: newValue });
         }}
         style={{
           width: '40px',
@@ -187,11 +186,13 @@ export default function App() {
           cursor: 'pointer'
         }}
       >
-        { (data.planner.water || 0) >= glass ? '💧' : '○' }
+        {(data.planner.water || 0) >= glass ? '💧' : '○'}
       </button>
     ))}
   </div>
 </div>
+
+          
           <div style={st.section}><h3 style={st.secTitle}>📝 Notes</h3>
             <textarea style={st.notesArea} value={data.planner.notes} onChange={e => updatePlanner({notes: e.target.value})} placeholder="Reflections, gratitude, or ideas..." />
           </div>
